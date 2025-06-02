@@ -130,8 +130,11 @@ def generate_page(from_path, template_path, dest_path):
 
     return 
 
+# find all markdown files and generate html pages recursively
+def generate_pages_recursive(from_path, template_path, dest_path):
+    return
 
-
+    
 # Main
 def main():
 
