@@ -139,17 +139,21 @@ def generate_pages_recursive(from_path, template_path, dest_path):
     # if index.md - generate page
     # anything else - continue
 
-    # build path object to from_path
+    # build path objects to from_path and dest_path
     p_from = Path(from_path)
     p_to = Path(dest_path)
 
+    # iterate over each item in directory
     for item in p_from.iterdir():
 
+        # if item is a folder, create same folder in public directory and make recursive call on item
         if os.path.isdir(item):
             os.mkdir(p_to / item.name)
             generate_pages_recursive(item, template_path, p_to / item.name)
+        # if item is markdown file, generate html page in public directory
         elif item.suffix == '.md':
            generate_page(item, template_path, p_to)
+        # if non-markdown file in directory, throw exception
         else:
             raise Exception("Error: non-markdown file found, please remove or place in static directory for copy")
         
