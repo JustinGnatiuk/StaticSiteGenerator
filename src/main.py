@@ -5,6 +5,7 @@ from markdown_blocks import *
 import re
 import os
 import shutil
+from pathlib import Path
 
 ### Functions ###
 
@@ -80,30 +81,26 @@ def generate_page(from_path, template_path, dest_path):
     print(f"Generating page from {from_path} to {dest_path}...")
     print("-----------------------------------------------------")
 
-    # validate existence of markdown file
-    if os.path.exists(from_path):
-        
-        # open markdown file and extract title into string
-        with open(from_path, 'r', encoding="utf-8") as md_file:
+    
+    # open markdown file and extract title into string
+    with open(from_path, 'r', encoding="utf-8") as md_file:
 
-            # extract first line of markdown file
-            titleLine = md_file.readline()
+        # extract first line of markdown file
+        titleLine = md_file.readline()
 
-            # Attempt to extract title from markdown
-            pageTitle = extract_title(titleLine)
+        # Attempt to extract title from markdown
+        pageTitle = extract_title(titleLine)
 
-            print("-----------------------------------------------------")
-            print("Page Title successfully extracted")
-            print(f"Page Title is: {pageTitle}")
-            print("-----------------------------------------------------")
+        print("-----------------------------------------------------")
+        print("Page Title successfully extracted")
+        print(f"Page Title is: {pageTitle}")
+        print("-----------------------------------------------------")
 
-        # re-open markdown file to extract full markdown into string
-        with open(from_path, 'r', encoding="utf-8") as md_file:
+    # re-open markdown file to extract full markdown into string
+    with open(from_path, 'r', encoding="utf-8") as md_file:
 
-            # extract markdown string
-            markdown_string = md_file.read()
-    else:
-        raise Exception("Markdown index.md file does not exist! Please place on in content directory")
+        # extract markdown string
+        markdown_string = md_file.read()
 
     # check for existence of template file
     if os.path.exists(template_path):
@@ -124,17 +121,42 @@ def generate_page(from_path, template_path, dest_path):
     full_html_string = full_html_string.replace("{{ Content }}", md_html)
 
     # create destination file and write full html string to it
-    with open(dest_path, 'w') as dest_file:
-
-        dest_file.write(full_html_string)
-
+    # double check to make sure destination folder exists, if not, create it
+    if os.path.exists(dest_path):
+        with open(dest_path / "index.html", 'w') as dest_file:
+            dest_file.write(full_html_string)
+    else:
+        os.mkdir(dest_path)
+        with open(dest_path / "index.html", 'w') as dest_file:
+            dest_file.write(full_html_string)
     return 
 
 # find all markdown files and generate html pages recursively
 def generate_pages_recursive(from_path, template_path, dest_path):
+
+    # traverse content folder
+    # if folder - recursively call generate_page_recursive
+    # if index.md - generate page
+    # anything else - continue
+
+    # build path object to from_path
+    p_from = Path(from_path)
+    p_to = Path(dest_path)
+
+    for item in p_from.iterdir():
+
+        if os.path.isdir(item):
+            os.mkdir(p_to / item.name)
+            generate_pages_recursive(item, template_path, p_to / item.name)
+        elif item.suffix == '.md':
+           generate_page(item, template_path, p_to)
+        else:
+            raise Exception("Error: non-markdown file found, please remove or place in static directory for copy")
+        
+
     return
 
-    
+
 # Main
 def main():
 
@@ -143,24 +165,16 @@ def main():
     CopyToPublic("./static")
 
     # look for index.md in content directory
-    markdown_dir = "./content/index.md"
+    content_dir = "./content"
 
     # set destination directory
-    dest_path = "./public/index.html"
+    dest_path = "./public"
 
     # set template html path
     template_path = "./template.html"
 
-    generate_page(markdown_dir, template_path, dest_path)
-
-    print("Page successfully generated")
-
-    # debugging my god
-    test_dir = "./content/index_test.md"
-
-    with open(test_dir, 'r') as md_file:
-        md_string = md_file.read()
-
+    generate_pages_recursive(content_dir, template_path, dest_path)
+        
     return
 
 main()
