@@ -41,7 +41,7 @@ def CopyToPublic(root):
         if(os.path.isfile(entry_path)):
             
             # replace static path with public path
-            dest_path = entry_path.replace("./static", "./public")
+            dest_path = entry_path.replace("./static", "./docs")
 
             # copy static path to public path
             shutil.copy(entry_path, dest_path)
@@ -50,7 +50,7 @@ def CopyToPublic(root):
         else:
             
             # replace static path with public path
-            dest_path = entry_path.replace("./static", "./public")
+            dest_path = entry_path.replace("./static", "./docs")
 
             # create folder in public path
             os.mkdir(dest_path)
@@ -76,7 +76,7 @@ def extract_title(markdown):
         raise Exception("Invalid Title Line in Markdown, please begin markdown file with h1 header title")
 
 # generate html page from markdown file
-def generate_page(from_path, template_path, dest_path):
+def generate_page(from_path, template_path, dest_path, base_path):
 
     print("-----------------------------------------------------")
     print(f"Generating page from {from_path} to {dest_path}...")
@@ -121,6 +121,10 @@ def generate_page(from_path, template_path, dest_path):
     # replace {{ Content }} in template with md_html string
     full_html_string = full_html_string.replace("{{ Content }}", md_html)
 
+    # replace href and src paths to prepend basepath for github hosting
+    full_html_string = full_html_string.replace("href=\"/", f"href=\"{base_path}")
+    full_html_string = full_html_string.replace("src=\"/", f"src=\"{base_path}")
+
     # create destination file and write full html string to it
     # double check to make sure destination folder exists, if not, create it
     if os.path.exists(dest_path):
@@ -133,7 +137,7 @@ def generate_page(from_path, template_path, dest_path):
     return 
 
 # find all markdown files and generate html pages recursively
-def generate_pages_recursive(from_path, template_path, dest_path):
+def generate_pages_recursive(from_path, template_path, dest_path, base_path):
 
     # traverse content folder
     # if folder - recursively call generate_page_recursive
@@ -150,10 +154,10 @@ def generate_pages_recursive(from_path, template_path, dest_path):
         # if item is a folder, create same folder in public directory and make recursive call on item
         if os.path.isdir(item):
             os.mkdir(p_to / item.name)
-            generate_pages_recursive(item, template_path, p_to / item.name)
+            generate_pages_recursive(item, template_path, p_to / item.name, base_path)
         # if item is markdown file, generate html page in public directory
         elif item.suffix == '.md':
-           generate_page(item, template_path, p_to)
+           generate_page(item, template_path, p_to, base_path)
         # if non-markdown file in directory, throw exception
         else:
             raise Exception("Error: non-markdown file found, please remove or place in static directory for copy")
@@ -165,20 +169,28 @@ def generate_pages_recursive(from_path, template_path, dest_path):
 # Main
 def main():
 
+    print(sys.argv)
+
+    # extract command line parameters
+    if len(sys.argv) > 1:
+        basepath = sys.argv[1]
+    else:
+        basepath = "/"
+
     # clear public directory and copy static directory to public
-    ClearPublic("./public")
+    ClearPublic("./docs")
     CopyToPublic("./static")
 
     # look for index.md in content directory
     content_dir = "./content"
 
     # set destination directory
-    dest_path = "./public"
+    dest_path = "./docs"
 
     # set template html path
     template_path = "./template.html"
 
-    generate_pages_recursive(content_dir, template_path, dest_path)
+    generate_pages_recursive(content_dir, template_path, dest_path, basepath)
         
     return
 
