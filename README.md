@@ -1,0 +1,1 @@
+## Static Site Generator built by Justin Gnatiuk
